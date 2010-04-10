@@ -4,7 +4,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FilenameFilter;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -12,7 +11,7 @@ import java.util.Comparator;
 public class AppEngineDataEntryClient {
     private static final File ROOT_FOLDER = new File("C:\\data\\projects\\rapAttack\\rapAttackGAE\\resources\\indexes");
     private static final String SERVLET_NAME = "DataInputServlet";
-    private static final String PARAM_NAME = "artist";
+    private static final String PARAM_NAME = "albumFile";
 
     private void doUpdates(String targetHost) {
         File[] files = ROOT_FOLDER.listFiles(new FileFilter() {
@@ -33,9 +32,9 @@ public class AppEngineDataEntryClient {
 
         for (File f : files) {
             String fileName = f.getName();
-            String artistName = getAritstName(fileName);
-            System.out.println("AppEngineDataEntryClient.doUpdates using artist name: " + artistName + " lenght is " + f.length());
-            get("http://" + targetHost + "/" + SERVLET_NAME + "?" + PARAM_NAME + "=" + artistName);
+            String albumFileName = getAlbumFileName(fileName);
+            System.out.println("AppEngineDataEntryClient.doUpdates using albumFile name: " + albumFileName + " lenght is " + f.length());
+            get("http://" + targetHost + "/" + SERVLET_NAME + "?" + PARAM_NAME + "=" + albumFileName);
         }
     }
 
@@ -49,8 +48,8 @@ public class AppEngineDataEntryClient {
         }
     }
 
-    private String getAritstName(String file) {
-        System.out.println("AppEngineDataEntryClient.getAritstName file: " + file);
+    private String getAlbumFileName(String file) {
+        System.out.println("AppEngineDataEntryClient.getAlbumFileName file: " + file);
         return file.substring("hierarcy-index-".length(), file.length() - ".ser".length());
     }
 

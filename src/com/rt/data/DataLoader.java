@@ -5,22 +5,22 @@ import com.google.common.collect.Multimap;
 import com.googlecode.objectify.Key;
 import com.rt.dto.DataMapper;
 import com.rt.indexing.*;
+import com.rt.util.MapUtils;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
 public class DataLoader {
 
-    private ArtistNode loadIndexHierarchy(String prefix) {
+    private AlbumNode loadIndexHierarchy(String prefix) {
         String cpResource = "indexes/hierarcy-index-"+prefix+".ser";
          URL resource = Thread.currentThread().getContextClassLoader().getResource(cpResource);
         try {
             DataMapper d = new DataMapper();
-            return (ArtistNode) d.read(resource.openStream());
+            return (AlbumNode) d.read(resource.openStream());
         } catch (Exception e) {
             System.out.println("DataLoader.loadIndexHierarchy no file for "+cpResource+" due to "+e.getMessage());
-            //e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             return null;
         }
     }
@@ -61,13 +61,13 @@ public class DataLoader {
         return null;
     }
 
-    public void loadArtist(RhymeDao dao, String artistName) {
-        System.out.println("DataLoader.loadFromFime loading from artistName: "+artistName);
-        if(!dao.containsArtist(artistName)){
-            load(dao, loadIndexHierarchy(artistName));
-        }else{
-            System.out.println("DataLoader.loadFromFime datastore already contains "+artistName);
-        }
+    public void loadAlbumFile(RhymeDao dao, String albumName) {
+        System.out.println("DataLoader.loadFromFime loading from albumName: "+ albumName);
+        //if(!dao.containsArtist(albumName)){
+            load(dao, loadIndexHierarchy(albumName));
+        //}else{
+        //    System.out.println("DataLoader.loadFromFime datastore already contains "+ albumName);
+        //}
     }
 
     public static class AlbumHolder {
@@ -186,7 +186,7 @@ public class DataLoader {
         //System.out.println("DataLoader.setSongOnRhymeBatch setting song key " + song);
         Multimap<String, RhymeData> res = ArrayListMultimap.create();
         for (RhymeLeaf r : rhymeBatch) {
-            res.get(r.word()).add(new RhymeData(song, toJList(r.lines(), String.class)));
+            res.get(r.word()).add(new RhymeData(song, toJList(r.lines(), String.class), toJList(r.parts(), String.class)));
         }
         return res;
     }
@@ -201,6 +201,32 @@ public class DataLoader {
         for (ArtistNode artist : artistNodes.values()) {
             load(dao, artist);
         }
+    }
+
+    private void load(RhymeDao dao, AlbumNode albumNode) {
+        System.out.println("DataLoader.load started at " + System.currentTimeMillis());
+        //List<Album> albums = new ArrayList<Album>();
+        //List<Song> songs = new ArrayList<Song>();
+        List<AlbumHolder> albumHolders = new ArrayList<AlbumHolder>();
+        //    List<AlbumNode> albumNodes = toJList(artist.children());
+        //    for (AlbumNode albumNode : albumNodes) {
+                //System.out.println("DataLoader.load node: "+ albumNode);
+                Album album = new Album(albumNode.title(), albumNode.artist(), albumNode.year());
+                AlbumHolder albumHolder = new AlbumHolder(album);
+                albumHolders.add(albumHolder);
+                //albums.add(album);
+                //Album albumData = dao.addAlbum(albumNode.title(), albumNode.artist(), albumNode.year());
+                List<SongNode> songNodes = toJList(albumNode.children());
+                for (SongNode s : songNodes) {
+                    //Song song = dao.addSong(s.title(), s.trackNo(), "", new Key<Album>(Album.class, albumData.getId()));
+                    //Song song = dao.addSong(s.title(), s.trackNo(), "",null);
+                    Song song = new Song(s.title(), s.trackNo(), "", null);
+                    List<RhymeLeaf> rhymeLeaves = toJList(s.rhymes());
+                    albumHolder.addSong(song, rhymeLeaves);
+                }
+            //}
+
+        insertAll(albumHolders, dao);
     }
 
     private void load(RhymeDao dao, ArtistNode artist) {

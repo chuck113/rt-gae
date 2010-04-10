@@ -36,7 +36,7 @@ public class DataLoaderTest {
         Rhyme rhyme = dao.lookUpWord("bump");
         Assert.assertNotNull(rhyme);
         RhymeData data = rhyme.getRhymes().get(0);
-        List<String> st = data.getRhymes();
+        List<String> st = data.getRhymeLines();
         Assert.assertEquals("Disco bag schlepping and you're doing the bump", st.get(0));
         Assert.assertEquals("Shake your rump", st.get(1));
 

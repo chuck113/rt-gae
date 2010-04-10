@@ -2,6 +2,7 @@ package com.rt.data;
 
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.QueryResultIterable;
+import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -49,7 +50,8 @@ public class RhymeDao extends DAOBase {
         Map<Key<Rhyme>, Rhyme> existingRhymes = getExistingRhymesUsingNew(newRhymes);
         List<Rhyme> toInsert = mergeRhymeListsOnWords(existingRhymes, newRhymes);
 
-        int batchSize = 500;
+        System.out.println("RhymeDao.addRhymes will insert "+toInsert.size()+" rhymes");
+        int batchSize = 100;
         if(toInsert.size() > 0){
             for (List<Rhyme> rhymeList : Iterables.partition(toInsert, batchSize)) {
                 ofy().put(rhymeList);
@@ -80,11 +82,6 @@ public class RhymeDao extends DAOBase {
         Rhyme r = new Rhyme(word, rhymes);
         ofy().put(r);
         return r;
-    }
-
-    public Rhyme addRhyme(String word, Key<Song> song, List<String> rhymeLines){
-        RhymeData d = new RhymeData(song, rhymeLines);
-        return addRhyme(word, d);
     }
 
     public Rhyme addRhyme(String word, RhymeData d){
@@ -145,7 +142,8 @@ public class RhymeDao extends DAOBase {
         return ofy().query(Album.class).filter("artist =", artist).countAll() > 0;
     }
 
-    public Rhyme lookUpWord(String word){
+    public Rhyme lookUpWord(String wordRaw){
+        String word = wordRaw.toUpperCase();
         return ofy().query(Rhyme.class).filter("word =", word).get();
     }
 

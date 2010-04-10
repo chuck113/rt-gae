@@ -52,7 +52,7 @@
             <div class="lyricsCell">
                 <%
             for(int i=0; i<rhyme.getLines().size(); i++){
-                String line = RhymeUtil.wrapLastWordInCss(rhyme.getLines().get(i));
+                String line = RhymeUtil.wrapPartsInCss(rhyme.getLines().get(i), rhyme.getParts());
                 line = (i < rhyme.getLines().size()-1) ? line+" /":line;
                 %><%=line%> <%
             }
