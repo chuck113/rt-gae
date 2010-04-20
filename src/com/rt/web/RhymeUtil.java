@@ -1,18 +1,16 @@
 package com.rt.web;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.googlecode.objectify.Key;
 import com.rt.data.*;
-import com.rt.dto.DataMapper;
-import com.rt.indexing.RhymeLines;
 import com.rt.util.NameMapper;
 
-import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 public class RhymeUtil {
 
@@ -21,12 +19,14 @@ public class RhymeUtil {
         private final String artist;
         private final List<String> lines;
         private final List<String> parts;
+        private final List<String> referenceParts;
 
-        public RhymeData(String title, String artist, List<String> lines, List<String> parts) {
+        public RhymeData(String title, String artist, List<String> lines, List<String> parts, List<String> partsFromOtherRhymes) {
             this.title = title;
             this.artist = artist;
             this.lines = lines;
             this.parts = parts;
+            this.referenceParts = partsFromOtherRhymes;
         }
 
         public List<String> getParts() {
@@ -43,6 +43,10 @@ public class RhymeUtil {
 
         public List<String> getLines() {
             return lines;
+        }
+
+        public List<String> getReferenceParts() {
+            return referenceParts;
         }
     }
 
@@ -64,23 +68,44 @@ public class RhymeUtil {
         }
     }
 
-    public static String wrapPartsInCss(String lineRaw, List<String> parts){
-        List<Integer> wordsToWrapInCss = new ArrayList<Integer>();
+//    public static String wrapOtherPartsInCss(String lineRaw, List<String> otheParts){
+//        return wrapStringsInCss(lineRaw, otheParts, new ReferencingRhymePartCssApplyer());
+//    }
+//
+//    public static String wrapPartsInCss(String lineRaw, List<String> parts){
+//        return wrapStringsInCss(lineRaw, parts, new RhymePartCssApplyer());
+//    }
+
+    public static void main(String[] args) {
+        RhymeData d = new RhymeData("", "", Collections.singletonList("No hopes folks, I quote note for note / You mind float on the rhyme on I wrote"),
+                Lists.newArrayList("QUOTE", "NOTE", "FLOAT", "WROTE"), Collections.<String>emptyList());
+        
+        String line = "You mind float on the rhyme on I wrote";
+        System.out.println("RhymeUtil.main: "+wrapStringsInCss(line, d));
+    }
+
+    public static String wrapStringsInCss(String lineRaw, RhymeData rhyme){
+        List<Integer> wordsToWrapInPartCss = new ArrayList<Integer>();
+        List<Integer> wordsToWrapInRefPartCss = new ArrayList<Integer>();
         // TODO use method as we use to generate rhymes
 
         String[] uppercaseWords = NameMapper.nSpace(lineRaw).split(" ");
         for(int i=0; i< uppercaseWords.length; i++){
-            if(parts.contains(uppercaseWords[i])){
-                wordsToWrapInCss.add(i);
+            if(rhyme.getParts().contains(uppercaseWords[i])){
+                wordsToWrapInPartCss.add(i);
+            }else if(rhyme.getReferenceParts().contains(uppercaseWords[i])){
+                wordsToWrapInRefPartCss.add(i);
             }
         }
 
         String[] words = lineRaw.split(" ");
         StringBuilder builder = new StringBuilder();
 
-        for(int i=0; i< words.length; i++){
-            if(wordsToWrapInCss.contains(i)){
-                builder.append(applyCss(words[i]));
+        for(int i=0; i< lineRaw.split(" ").length; i++){
+            if(wordsToWrapInPartCss.contains(i)){
+                builder.append(applyPartCss(words[i]));
+            }else if(wordsToWrapInRefPartCss.contains(i)){
+                builder.append(applyRefPartCss(words[i]));
             }else{
                 builder.append(words[i]);
             }
@@ -89,62 +114,49 @@ public class RhymeUtil {
         return builder.toString();
     }
 
-    private static String applyCss(String st){
-      return "<span class=\"rhymeWord\">" + st + "</span>";
+    private static String applyRefPartCss(String st){
+        String href = "<a href=\"/index.jsp?word="+st+"\">"+st+"</a>";
+        return "<span class=\"rrp\">" + href + "</span>";
     }
 
-//    /**
-//     * FIXME can do this because we know only the last individualWords will rhyme
-//     */
-//    public static String wrapLastWordInCss(String lineRaw) {
-//        //<span class="rhymeWord">word</span>
-//        String line = lineRaw.trim();
-//        int lastSpace = line.lastIndexOf(" ");
-//        if (lastSpace == -1) return line;
-//
-//        return line.substring(0, lastSpace) + "<span class=\"rhymeWord\">" + line.substring(lastSpace) + "</span>";
-//    }
-//
-//    private static Map<String, List<RhymeLines>> getRhymes() {
-//        URL resource = Thread.currentThread().getContextClassLoader().getResource("indexes/index.ser");
-//        try {
-//            DataMapper d = new DataMapper();
-//            return d.read(resource.openStream());
-//        } catch (IOException e) {
-//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-//            return null;
-//        }
-//    }
+     private static String applyPartCss(String st){
+        String href = "<a href=\"/index.jsp?word="+st+"\">"+st+"</a>";
+        return "<span class=\"rp\">" + href + "</span>";
+    }
+
+     public static List<Rhyme> randoms(int amount) {
+        return new RhymeDao().getRandomRhymes(amount);
+    }
 
     public static RandomResult random() {
         RhymeDao rhymeDao = new RhymeDao();
-        Rhyme rhyme = rhymeDao.getRandomRhyme();
+        Rhyme rhyme = rhymeDao.getRandomRhymes(1).get(0);
         return new RandomResult(convert(rhyme, rhymeDao), rhyme.getWord());
     }
 
     //TODO this reads from the data store too much.
     private static List<RhymeData> convert(Rhyme rhyme, RhymeDao rhymeDao){
-        List<com.rt.data.RhymeData> dataList = rhyme.getRhymes();
+        List<RhymePartData> dataList = rhyme.getRhymes();
         List<RhymeData> res = new ArrayList<RhymeData>();
-        for(com.rt.data.RhymeData d : dataList){
+        for(RhymePartData d : dataList){
             Song song = rhymeDao.lookUpSong(d.getSong());
             Album album = rhymeDao.lookUpAlbum(song.getAlbum());
-            res.add(new RhymeData(song.getTitle(), album.getArtist(), d.getRhymeLines(), d.getRhymeParts()));
+            res.add(new RhymeData(song.getTitle(), album.getArtist(), d.getRhymeLines(), d.getRhymeParts(), d.getOtherRhymeParts()));
         }
         return res ;
     }
 
+
     public static List<RhymeData> findRhymes(String word) {
         RhymeDao rhymeDao = new RhymeDao();
         Rhyme rhyme = rhymeDao.lookUpWord(word);
-        if(rhyme == null)return null;
 
-        return convert(rhyme, rhymeDao);
+        return rhyme == null ? null : convert(rhyme, rhymeDao);
     }
 
-    public static Iterable<Key<Song>> getSongs(List<com.rt.data.RhymeData> dataList){
-        return Iterables.transform(dataList, new Function<com.rt.data.RhymeData, Key<Song>>(){
-            public Key<Song> apply(com.rt.data.RhymeData rhymeData) {
+    public static Iterable<Key<Song>> getSongs(List<RhymePartData> dataList){
+        return Iterables.transform(dataList, new Function<RhymePartData, Key<Song>>(){
+            public Key<Song> apply(RhymePartData rhymeData) {
                 return rhymeData.getSong();
             }
         });

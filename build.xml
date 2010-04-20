@@ -131,9 +131,9 @@
         <pathelement path="${gae.rt.out.dir}"/>
     </path>
 
-    <target name="rebuildIndexes">
+    <target name="buildAndDeployIndexeslocalhost">
         <java classpathref="rt.classpath" classname="com.rt.indexing.HierarchicalIndexerObj" fork="true"/>
-        <antcall target="rebuildIndexesOnlocalhost"/>
+        <antcall target="deployIndexesLocalhost"/>
     </target>
 
     <target name="uploadIndexesLocalhost">
@@ -142,7 +142,7 @@
         </java>
     </target>
 
-    <target name="rebuildIndexesOnlocalhost">
+    <target name="deployIndexesLocalhost">
         <delete file="${gae.data.file}"/>
         <parallel>
         <antcall target="runserver"/>

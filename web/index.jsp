@@ -1,6 +1,7 @@
 <%@ page import="com.rt.web.RhymeUtil" %>
 <%@ page import="com.rt.indexing.RhymeLines" %>
 <%@ page import="java.util.List" %>
+<%@ page import="com.rt.data.Rhyme" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 
@@ -14,6 +15,7 @@
 
 <body>
 <div id="title">Rhyme Time</div>
+
 <p>Type a word to see rap lines that rhyme the word...</p>
 <form action="index.jsp">
     <table>
@@ -31,10 +33,23 @@
         </tr>
     </table>
 </form>
-
 <%
-    String word = request.getParameter("word");
-    String random = request.getParameter("random");
+String suggest = request.getParameter("suggest");
+String word = request.getParameter("word");
+String random = request.getParameter("random");
+
+if(word == null || (suggest != null && suggest.equals("true")) || random != null) {
+    %>
+      <p>Suggestions:
+        <%
+          for(Rhyme r:RhymeUtil.randoms(10)){
+             %><a href='/index.jsp?suggest=true&word=<%=r.getWord()%>'><%=r.getWord().toLowerCase()%></a>,  <%
+          }
+        %>
+    </p>
+    <%
+}
+if(word != null || random != null){
     List<RhymeUtil.RhymeData> rhymes = null;
     if(word != null){
         rhymes = RhymeUtil.findRhymes(word);
@@ -43,7 +58,8 @@
         word = result.getWord();
         rhymes = result.getRhymeData();
     }
-    if(rhymes == null){
+
+    if(word != null && rhymes == null){
         %><p>No rhymes found for <%=word%></p> <%
     }else{
         %><p>Lines that rhyme <b><%=word%></b></p><%
@@ -52,7 +68,7 @@
             <div class="lyricsCell">
                 <%
             for(int i=0; i<rhyme.getLines().size(); i++){
-                String line = RhymeUtil.wrapPartsInCss(rhyme.getLines().get(i), rhyme.getParts());
+                String line = RhymeUtil.wrapStringsInCss(rhyme.getLines().get(i), rhyme);
                 line = (i < rhyme.getLines().size()-1) ? line+" /":line;
                 %><%=line%> <%
             }
@@ -64,6 +80,17 @@
     <%
         }
     }
+}
+
+
+
+%>
+
+
+
+<%
+
+
 %>
 
 </body>

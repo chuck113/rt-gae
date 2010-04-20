@@ -16,7 +16,7 @@ public class AppEngineDataEntryClient {
     private void doUpdates(String targetHost) {
         File[] files = ROOT_FOLDER.listFiles(new FileFilter() {
             public boolean accept(File pathname) {
-                return pathname.getName().endsWith(".ser");
+                return pathname.getName().endsWith(".ser") && pathname.getName().startsWith("hierarcy-index");
             }
         });
 
